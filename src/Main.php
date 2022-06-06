@@ -20,7 +20,6 @@ class Main {
 	protected static LoggerInterface $logger;
 	protected static ServerRequestInterface $request;
 	private static array $innerDump = [];
-	private static array $registry = [];
 	private static bool $debugMode = false;
 
 	/**
@@ -38,6 +37,7 @@ class Main {
 		return self::$container;
 	}
 
+	// TODO: Нужно организовать возможность использования других шаблонизаторов (сейчас это возможно только через адаптер)
 	/**
 	 * @return TemplateInterface
 	 */
@@ -81,30 +81,6 @@ class Main {
 			}
 		}
 		return $out;
-	}
-
-	/**
-	 * @param string $key
-	 * @param $value
-	 */
-	final public function set(string $key, $value) : void {
-		self::$registry[$key] = $value;
-	}
-
-	/**
-	 * @param string $key
-	 * @return bool
-	 */
-	final public function has(string $key) : bool {
-		return !empty(self::$registry[$key]);
-	}
-
-	/**
-	 * @param string $key
-	 * @return mixed|null
-	 */
-	final public function get(string $key) {
-		return ($this->has($key)) ? self::$registry[$key] : null;
 	}
 
 	/**

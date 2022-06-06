@@ -43,7 +43,7 @@ class App extends Main {
 	 * @param string $configFile
 	 */
 	public function __construct(string $configFile = "") {
-		$this->baseDir = dirname(dirname(dirname(dirname(__DIR__))));
+		$this->baseDir = dirname(__DIR__, 4);
 		$this->configFile = $configFile;
 	}
 
@@ -84,7 +84,7 @@ class App extends Main {
 						return $response;
 					}
 					elseif(is_object($response)){
-						$this->set($appHandler->className, $response);
+						$this->container()->set($appHandler->className, $response);
 					}
 					elseif($response === false) break;
 				}
@@ -187,6 +187,7 @@ class App extends Main {
 				$router->setStartPoint($mountKey);
 				//TODO: форматы файла
 				$router->withRules(yaml_parse_file($this->baseDir."/".$appNode['router']));
+				//TODO: Может быть вызван повторно с другого слоя
 				$this->appNodes[] = $router->match($this->request());
 			}
 		}
