@@ -27,7 +27,7 @@ class App extends Main {
 	private string $baseDir;
 	private string $configFile;
 	private array $config = [];
-	private array $appNodes = [];
+	private array $appRoutes = [];
 	private RouterInterface $router;
 
 	/**
@@ -54,30 +54,30 @@ class App extends Main {
 	public function handler(ServerRequestInterface $request) : ResponseInterface {
 		try{
 			$this->init($request);
-			foreach ($this->appNodes as $appNodeKey => $appHandler){
+			$this->debug($this->appRoutes, "routes");
+
+			foreach ($this->appRoutes as $appRouteKey => $appHandler){
 
 				if(!$appHandler instanceof MatchObject) continue;
 				$response = null;
 
 				if(!empty($appHandler->className)){
 					if(!class_exists($appHandler->className)) {
-						$this->debug("- failed -", "nodes");
-						$this->debug("Err - Class ".$appHandler->className." is not exists", "error");
+						$this->debug("Err - Class ".$appHandler->className." is not exists", "handlers");
 						continue;
 					}
-					$controllers[$appNodeKey] = new $appHandler->className;
+					$controllers[$appRouteKey] = new $appHandler->className;
 					$log = "OK - Class ".$appHandler->className;
 
 					if(!empty($appHandler->methodName)){
 						if(!method_exists($appHandler->className, $appHandler->methodName)) {
-							$this->debug("- failed -", "nodes");
-							$this->debug("Err - Method ".$appHandler->className."/".$appHandler->methodName." is not exists", "error");
+							$this->debug("Err - Method ".$appHandler->className."/".$appHandler->methodName." is not exists", "handlers");
 							continue;
 						}
-						$response = (!empty($appHandler->params)) ? $controllers[$appNodeKey]->{$appHandler->methodName}(...$appHandler->params) : $controllers[$appNodeKey]->{$appHandler->methodName}();
+						$response = (!empty($appHandler->params)) ? $controllers[$appRouteKey]->{$appHandler->methodName}(...$appHandler->params) : $controllers[$appRouteKey]->{$appHandler->methodName}();
 						$log = "OK - Method ".$appHandler->className."/".$appHandler->methodName;
 					}
-					$this->debug($log);
+					$this->debug($log, "handlers");
 
 					// 1. Если на этапе итерации уже получен ответ ResponseInterface - досрочно отдаем результат в эмиттер
 					if($response instanceof ResponseInterface) {
@@ -179,16 +179,20 @@ class App extends Main {
 			if (0 !== (strpos($this->request()->getUri()->getPath(), $mountKey))) continue;
 
 			if(!empty($appNode['action'])){
-				list($className, $methodName, $params) = explode("/", $appNode['action']);
-				$this->appNodes[] = new MatchObject($className, $methodName, $params);
+				$className  = $appNode['action'];
+				$methodName = $appNode['method'];
+				$params     = (!empty($appNode['params']) && is_string($appNode['params'])) ? explode(",",str_replace(" ", "", $appNode['params'])) : [];
+				$this->appRoutes[] = new MatchObject($className, $methodName, $params);
 			}
 			elseif(!empty($appNode['router']) && file_exists($this->baseDir."/".$appNode['router'])){
 				$router = $this->router();
 				$router->setStartPoint($mountKey);
 				//TODO: форматы файла
 				$router->withRules(yaml_parse_file($this->baseDir."/".$appNode['router']));
-				//TODO: Может быть вызван повторно с другого слоя
-				$this->appNodes[] = $router->match($this->request());
+				$routes = $router->match($this->request());
+				foreach ($routes as $route){
+					$this->appRoutes[] = $route;
+				}
 			}
 		}
 	}
