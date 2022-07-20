@@ -9,24 +9,61 @@
 namespace Rmphp\Kernel;
 
 use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use Rmphp\Foundation\TemplateInterface;
 
 class Main {
 
-	protected static ContainerInterface $container;
-	protected static TemplateInterface $template;
-	protected static LoggerInterface $logger;
-	protected static ServerRequestInterface $request;
+	private static ContainerInterface $container;
+	private static TemplateInterface $template;
+	private static LoggerInterface $logger;
+	private static Globals $globals;
 	private static array $innerDump = [];
 	private static bool $debugMode = false;
 
+
 	/**
-	 * @return ServerRequestInterface
+	 * @param ServerRequestInterface $request
+	 * @param ResponseInterface $response
+	 * @return void
 	 */
-	final public function request() : ServerRequestInterface {
-		return self::$request;
+	protected function setGlobals(ServerRequestInterface $request, ResponseInterface $response) : void {
+		self::$globals = new Globals($request, $response);
+	}
+
+	/**
+	 * @param ContainerInterface $container
+	 * @return void
+	 */
+	protected function setContainer(ContainerInterface $container) : void {
+		self::$container = $container;
+	}
+
+	/**
+	 * @param TemplateInterface $template
+	 * @return void
+	 */
+	protected function setTemplate(TemplateInterface $template) : void {
+		self::$template = $template;
+	}
+
+	/**
+	 * @param LoggerInterface $logger
+	 * @return void
+	 */
+	protected function setLogger(LoggerInterface $logger) : void {
+		self::$logger = $logger;
+	}
+
+
+
+	/**
+	 * @return Globals
+	 */
+	final public function globals() : Globals {
+		return self::$globals;
 	}
 
 	/**
@@ -67,7 +104,7 @@ class Main {
 
 	/**
 	 * @param string $key
-	 * @return array|null
+	 * @return array
 	 */
 	final public function getDebugList(string $key = ""): array {
 		$out = [];

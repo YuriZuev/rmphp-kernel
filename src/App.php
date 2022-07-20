@@ -14,8 +14,6 @@ use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
-use Laminas\Diactoros\Response\EmptyResponse;
-use Laminas\Diactoros\Response\HtmlResponse;
 use Rmphp\Foundation\Exceptions\AppException;
 use Rmphp\Foundation\RouterInterface;
 use Rmphp\Foundation\TemplateInterface;
@@ -49,11 +47,12 @@ class App extends Main {
 
 	/**
 	 * @param ServerRequestInterface $request
+	 * @param ResponseInterface $response
 	 * @return ResponseInterface
 	 */
-	public function handler(ServerRequestInterface $request) : ResponseInterface {
+	public function handler(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface {
 		try{
-			$this->init($request);
+			$this->init($request, $response);
 			$this->debug($this->appRoutes, "routes");
 
 			foreach ($this->appRoutes as $appRouteKey => $appHandler){
@@ -85,13 +84,21 @@ class App extends Main {
 					}
 					elseif(is_object($response)){
 						$this->container()->set($appHandler->className, $response);
+						$this->debug($response, "respons");
 					}
 					elseif($response === false) break;
 				}
 			}
 			// 2. Если итерации закончились и задан обьект Content им создаем результат для эмиттера
 			if($this->template()){
-				return (!empty($this->template()->getResponse())) ? new HtmlResponse($this->template()->getResponse()) : $this->defaultPage(404);
+				if (!empty($this->template()->getResponse())) {
+					$body = $this->globals()->response()->getBody();
+					$body->write($this->template()->getResponse());
+					$body->rewind();
+					return $this->globals()->response()->withBody($body);
+				} else {
+					return $this->defaultPage(404);
+				}
 			}
 			// 3. Отдаем пустой результат
 			return $this->defaultPage(404);
@@ -115,19 +122,23 @@ class App extends Main {
 	 */
 	private function defaultPage(int $code) : ResponseInterface{
 		if(!empty($this->config['defaultErrorPages']) && !empty($this->config['defaultErrorPages'][$code]) && file_exists($this->baseDir.'/'.$this->config['defaultErrorPages'][$code])){
-			return new HtmlResponse(file_get_contents($this->baseDir.'/'.$this->config['defaultErrorPages'][$code]), $code);
+			$body = $this->globals()->response()->getBody();
+			$body->write(file_get_contents($this->baseDir.'/'.$this->config['defaultErrorPages'][$code]));
+			$body->rewind();
+			return $this->globals()->response()->withBody($body)->withStatus($code);
 		}
-		return new EmptyResponse($code);
+		return $this->globals()->response()->withStatus($code);
 	}
 
 	/**
 	 * @param ServerRequestInterface $request
+	 * @param ResponseInterface $response
+	 * @return void
 	 * @throws AppException
 	 */
-	private function init(ServerRequestInterface $request) : void {
+	private function init(ServerRequestInterface $request, ResponseInterface $response) : void {
 
-		// request init
-		$this->setRequest($request);
+		$this->setGlobals($request, $response);
 
 		// config init
 		if(empty($this->config)){
@@ -176,7 +187,7 @@ class App extends Main {
 			$mountKey = (!empty($appNode['key'])) ? $appNode['key'] : '/';
 
 			// если url начинается не с точки монтирования смотрим далее
-			if (0 !== (strpos($this->request()->getUri()->getPath(), $mountKey))) continue;
+			if (0 !== (strpos($this->globals()->request()->getUri()->getPath(), $mountKey))) continue;
 
 			if(!empty($appNode['action'])){
 				$className  = $appNode['action'];
@@ -189,13 +200,14 @@ class App extends Main {
 				$router->setStartPoint($mountKey);
 				//TODO: форматы файла
 				$router->withRules(yaml_parse_file($this->baseDir."/".$appNode['router']));
-				$routes = $router->match($this->request());
+				$routes = $router->match($this->globals()->request());
 				foreach ($routes as $route){
 					$this->appRoutes[] = $route;
 				}
 			}
 		}
 	}
+
 
 	/**
 	 * @return RouterInterface
@@ -204,34 +216,5 @@ class App extends Main {
 		if(empty($this->router)) $this->debug("Application config without router", "error");
 		return $this->router;
 	}
-
-	/**
-	 * @param ServerRequestInterface $request
-	 */
-	private function setRequest(ServerRequestInterface $request) : void {
-		self::$request = $request;
-	}
-
-	/**
-	 * @param ContainerInterface $container
-	 */
-	private function setContainer(ContainerInterface $container) : void {
-		self::$container = $container;
-	}
-
-	/**
-	 * @param TemplateInterface $template
-	 */
-	private function setTemplate(TemplateInterface $template) : void {
-		self::$template = $template;
-	}
-
-	/**
-	 * @param LoggerInterface $logger
-	 */
-	private function setLogger(LoggerInterface $logger) : void {
-		self::$logger = $logger;
-	}
-
 
 }
