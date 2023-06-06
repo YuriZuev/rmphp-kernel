@@ -114,8 +114,8 @@ class Logger implements LoggerInterface {
 			$level = self::RFC_5424_LEVELS[$level];
 		}
 		if(!empty((string)$message))$in[] = $message;
-		if(!empty($context))$in[] = $context;
-		self::$logs[$level][] = (count($in)==1) ? $in[0] : $in;;
+		if(!empty($context)) $in[] = $context;
+		if(isset($in)) self::$logs[$level][] = (count($in)==1) ? $in[0] : $in;
 	}
 
 	/**

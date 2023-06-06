@@ -34,7 +34,7 @@ class App extends Main {
 	public function handler(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface {
 		try{
 			$this->init($request, $response);
-			$this->syslogger()->log("routes", "", $this->appRoutes);
+			$this->syslogger()->dump("routes", $this->appRoutes);
 
 			foreach ($this->appRoutes as $appRouteKey => $appHandler){
 
