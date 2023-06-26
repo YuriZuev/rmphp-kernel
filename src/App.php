@@ -78,7 +78,6 @@ class App extends Main {
 				$body->rewind();
 				return $this->globals()->response()->withBody($body);
 			}
-			vdd($this->template());
 			/**
 			 * 3. Отдаем пустой результат если не определен шаблонизатор
 			 */
