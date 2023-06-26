@@ -34,6 +34,8 @@ class App extends Main {
 	public function handler(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface {
 		try{
 			$this->init($request, $response);
+			$this->syslogger()->dump("Request", $request);
+			$this->syslogger()->dump("Router", $this->router);
 			$this->syslogger()->dump("routes", $this->appRoutes);
 
 			foreach ($this->appRoutes as $appRouteKey => $appHandler){
@@ -47,7 +49,7 @@ class App extends Main {
 						continue;
 					}
 					$controllers[$appRouteKey] = new $appHandler->className;
-					$log = "OK - Class ".$appHandler->className;
+					$log = "Class ".$appHandler->className;
 
 					if(!empty($appHandler->methodName)){
 						if(!method_exists($appHandler->className, $appHandler->methodName)) {
@@ -55,9 +57,9 @@ class App extends Main {
 							continue;
 						}
 						$response = (!empty($appHandler->params)) ? $controllers[$appRouteKey]->{$appHandler->methodName}(...$appHandler->params) : $controllers[$appRouteKey]->{$appHandler->methodName}();
-						$log = "OK - Method ".$appHandler->className."/".$appHandler->methodName;
+						$log = "Method ".$appHandler->className."/".$appHandler->methodName;
 					}
-					$this->syslogger()->log("handlers", $log);
+					$this->syslogger()->log("handlers", "OK - ".$log);
 					/**
 					 * 1. Если на этапе итерации уже получен ответ ResponseInterface - досрочно отдаем результат в эмиттер
 					 */
@@ -76,6 +78,7 @@ class App extends Main {
 				$body->rewind();
 				return $this->globals()->response()->withBody($body);
 			}
+			vdd($this->template());
 			/**
 			 * 3. Отдаем пустой результат если не определен шаблонизатор
 			 */
