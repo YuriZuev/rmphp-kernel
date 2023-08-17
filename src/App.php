@@ -157,11 +157,6 @@ class App extends Main {
 		if(is_file($this->baseDir."/".getenv("APP_NODES_FILE"))){
 			$nodes = include_once $this->baseDir."/".getenv("APP_NODES_FILE");
 		}
-		for ($appNodeNum = 1; getenv("APP_NODE".$appNodeNum); $appNodeNum++){
-			$nodesCollection[] = json_decode(getenv("APP_NODE".$appNodeNum), true);
-		}
-		if(isset($nodesCollection)) $nodes = $nodesCollection;
-
 		if(empty($nodes) || !is_array($nodes)) throw AppException::emptyAppNodes();
 		$this->getActions($nodes);
 	}
@@ -191,9 +186,6 @@ class App extends Main {
 
 				if(pathinfo($this->baseDir."/".$appNode['router'])['extension'] == "php") {
 					$this->router->withRules(include_once $this->baseDir."/".$appNode['router']);
-				}
-				elseif(pathinfo($this->baseDir."/".$appNode['router'])['extension'] == "json") {
-					$this->router->withRules(json_decode(file_get_contents($this->baseDir."/".$appNode['router']), true));
 				}
 				elseif(pathinfo($this->baseDir."/".$appNode['router'])['extension'] == "yaml") {
 					$this->router->withRules(yaml_parse_file($this->baseDir."/".$appNode['router']));
