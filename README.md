@@ -10,5 +10,5 @@ Stable version
 composer require rmphp/kernel
 ```
 ```bash
-composer require rmphp/kernel:"^1.0"
+composer require rmphp/kernel:"^2.0"
 ```

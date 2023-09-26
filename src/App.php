@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace Rmphp\Kernel;
 
+use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -48,7 +49,7 @@ class App extends Main {
 						$this->syslogger()->log("handlers", "Err - Class ".$appHandler->className." is not exists");
 						continue;
 					}
-					$controllers[$appRouteKey] = new $appHandler->className;
+					$controllers[$appRouteKey] = ($this->container() instanceof ContainerInterface) ? $this->container()->get($appHandler->className) : new $appHandler->className;
 					$log = "Class ".$appHandler->className;
 
 					if(!empty($appHandler->methodName)){
@@ -87,7 +88,7 @@ class App extends Main {
 			if($this->logger()) $this->logger()->warning($appException->getMessage()." on ".$appException->getFile().":".$appException->getLine());
 			$this->syslogger()->warning("AppException: ".$appException->getMessage());
 		}
-		catch (\Exception $exception) {
+		catch (\Exception|ContainerExceptionInterface $exception) {
 			if($this->logger()) $this->logger()->warning($exception->getMessage()." on ".$exception->getFile().":".$exception->getLine());
 			$this->syslogger()->warning("Exception: ".$exception->getMessage()." : ".$exception->getFile()." : ".$exception->getLine());
 		}
@@ -167,7 +168,7 @@ class App extends Main {
 	private function getActions(array $appNodes) : void {
 		foreach ($appNodes as $appNode){
 
-			// по умолчанию точка монтирования ровна корню
+			// по умолчанию точка монтирования от корня
 			$mountKey = (!empty($appNode['key'])) ? $appNode['key'] : '/';
 
 			// если url начинается не с точки монтирования смотрим далее
