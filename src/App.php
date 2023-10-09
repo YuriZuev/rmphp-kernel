@@ -74,10 +74,8 @@ class App extends Main {
 			 * 2. Если итерации закончились и задан обьект Content им создаем результат для эмиттера
 			 */
 			if($this->template() && !empty($this->template()->getResponse())){
-				$body = $this->globals()->response()->getBody();
-				$body->write($this->template()->getResponse());
-				$body->rewind();
-				return $this->globals()->response()->withBody($body);
+				$this->globals()->response()->getBody()->write($this->template()->getResponse());
+				return$this->globals()->response();
 			}
 			/**
 			 * 3. Отдаем пустой результат если не определен шаблонизатор
@@ -112,10 +110,7 @@ class App extends Main {
 	 */
 	private function defaultPage(int $code) : ResponseInterface{
 		if(is_file($this->baseDir.'/'.getenv("PAGE".$code))){
-			$body = $this->globals()->response()->getBody();
-			$body->write(file_get_contents($this->baseDir.'/'.getenv("PAGE".$code)));
-			$body->rewind();
-			return $this->globals()->response()->withBody($body)->withStatus($code);
+			$this->globals()->response()->getBody()->write(file_get_contents($this->baseDir.'/'.getenv("PAGE".$code)));
 		}
 		return $this->globals()->response()->withStatus($code);
 	}
