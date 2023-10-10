@@ -61,9 +61,7 @@ class App extends Main {
 						$log = "Method ".$appHandler->className."/".$appHandler->methodName;
 					}
 					$this->syslogger()->log("handlers", "OK - ".$log);
-					/**
-					 * 1. Если на этапе итерации уже получен ответ ResponseInterface - досрочно отдаем результат в эмиттер
-					 */
+
 					if($response instanceof ResponseInterface) {
 						return $response;
 					}
@@ -71,14 +69,7 @@ class App extends Main {
 				}
 			}
 			/**
-			 * 2. Если итерации закончились и задан обьект Content им создаем результат для эмиттера
-			 */
-			if($this->template() && !empty($this->template()->getResponse())){
-				$this->globals()->response()->getBody()->write($this->template()->getResponse());
-				return$this->globals()->response();
-			}
-			/**
-			 * 3. Отдаем пустой результат если не определен шаблонизатор
+			 * Отдаем пустой результат
 			 */
 			return $this->defaultPage(404);
 		}
@@ -99,7 +90,7 @@ class App extends Main {
 			$this->syslogger()->error("Error: ".$error->getMessage()." : ".$error->getFile()." : ".$error->getLine());
 		}
 		/**
-		 * 4. Отдаем ошибку без шаблона
+		 * Отдаем после ошибки
 		 */
 		return $this->defaultPage(501);
 	}
