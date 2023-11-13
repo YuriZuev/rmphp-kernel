@@ -4,6 +4,7 @@ namespace Rmphp\Kernel;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\UploadedFileInterface;
 
 class Globals {
 
@@ -150,10 +151,17 @@ class Globals {
 
 	/**
 	 * @param string $name
-	 * @return array|int|string
+	 * @return array|UploadedFileInterface|null
 	 */
 	public function files(string $name = "") {
-		return $this->onGlobal($this->request->getUploadedFiles(), $name);
+		$name = strtolower($name);
+		$var = $this->request->getUploadedFiles();
+		if (!empty($name))
+		{
+			if (!isset($var[$name])) return null;
+			return $var[$name];
+		}
+		return $var;
 	}
 
 	/**
