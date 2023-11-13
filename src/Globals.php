@@ -153,7 +153,7 @@ class Globals {
 	 * @param string $name
 	 * @return array|UploadedFileInterface|null
 	 */
-	public function files(string $name = "") {
+	public function files(string $name = ""): array|UploadedFileInterface|null {
 		$name = strtolower($name);
 		$var = $this->request->getUploadedFiles();
 		if (!empty($name))
