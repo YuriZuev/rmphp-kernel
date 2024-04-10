@@ -82,7 +82,7 @@ class App extends Main {
 			$this->syslogger()->warning("Exception: ".$exception->getMessage()." : ".$exception->getFile()." : ".$exception->getLine());
 		}
 		catch (AppError $appError){
-			if($this->logger()) $this->logger()->warning($appError->getMessage()." on ".$appError->getFile().":".$appError->getLine());
+			if($this->logger()) $this->logger()->error($appError->getMessage()." on ".$appError->getFile().":".$appError->getLine());
 			$this->syslogger()->error("Error: ".$appError->getMessage()." : ".$appError->getFile()." : ".$appError->getLine());
 		}
 		catch (\Error $error) {
