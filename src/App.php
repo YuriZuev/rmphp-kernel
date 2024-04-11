@@ -166,17 +166,22 @@ class App extends Main {
 				$params     = (!empty($appNode['params']) && is_string($appNode['params'])) ? explode(",",str_replace(" ", "", $appNode['params'])) : [];
 				$this->appRoutes[] = new MatchObject($className, $methodName, $params);
 			}
+			elseif(!empty($appNode['router']) && is_array($appNode['router'])){
+				if(empty($this->router)) throw AppError::invalidRequiredObject("Application config without router");
+				$this->router->setStartPoint($mountKey);
+				$this->router->withRules($appNode['router']);
+
+				$routes = $this->router->match($this->globals()->request()) ?? [];
+				foreach ($routes as $route){
+					$this->appRoutes[] = $route;
+				}
+			}
 			elseif(!empty($appNode['router']) && file_exists($this->baseDir."/".$appNode['router'])){
 
 				if(empty($this->router)) throw AppError::invalidRequiredObject("Application config without router");
 				$this->router->setStartPoint($mountKey);
-
-				if(pathinfo($this->baseDir."/".$appNode['router'])['extension'] == "php") {
-					$this->router->withRules(include_once $this->baseDir."/".$appNode['router']);
-				}
-				elseif(pathinfo($this->baseDir."/".$appNode['router'])['extension'] == "yaml") {
-					$this->router->withRules(yaml_parse_file($this->baseDir."/".$appNode['router']));
-				}
+				ob_start(); $routes = include_once $this->baseDir."/".$appNode['router']; ob_end_clean();
+				if(is_array($routes)) $this->router->withRules($routes);
 
 				$routes = $this->router->match($this->globals()->request()) ?? [];
 				foreach ($routes as $route){
