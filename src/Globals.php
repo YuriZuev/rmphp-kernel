@@ -10,7 +10,6 @@ class Globals {
 
 	private ServerRequestInterface $request;
 	private ResponseInterface $response;
-	private Session $session;
 
 	const INT = "INT";
 	const STRING = "STRING";
@@ -88,16 +87,6 @@ class Globals {
 	 * @param string $name
 	 * @return bool
 	 */
-	public function isSession(string $name = "") : bool {
-		if(!class_exists(Session::class)) return false;
-		if(!isset($this->session)) $this->session = new Session();
-		return (!empty($name)) ? isset($this->session->getSession()[$name]) : !empty($this->session->getSession());
-	}
-
-	/**
-	 * @param string $name
-	 * @return bool
-	 */
 	public function isFile(string $name = "") : bool {
 		return (!empty($name)) ? isset($this->request->getUploadedFiles()[$name]) : !empty($this->request->getUploadedFiles());
 	}
@@ -140,17 +129,6 @@ class Globals {
 
 	/**
 	 * @param string $name
-	 * @param string $type
-	 * @return array|int|string
-	 */
-	public function session(string $name = "", string $type = "") {
-		if(!class_exists(Session::class)) return null;
-		if(!isset($this->session)) $this->session = new Session();
-		return $this->onGlobal($this->session->getSession(), $name, $type);
-	}
-
-	/**
-	 * @param string $name
 	 * @return array|UploadedFileInterface|null
 	 */
 	public function files(string $name = ""): array|UploadedFileInterface|null {
@@ -184,18 +162,6 @@ class Globals {
 
 	/**
 	 * @param string $name
-	 * @param $value
-	 * @return void
-	 */
-	public function setSession(string $name, $value = null) : void {
-		if(class_exists(Session::class)) {
-			if(!isset($this->session)) $this->session = new Session();
-			$this->session->setSession($name, $value);
-		}
-	}
-
-	/**
-	 * @param string $name
 	 * @param string $value
 	 * @param int $expires
 	 * @param string $path
@@ -218,17 +184,6 @@ class Globals {
 	}
 
 	/**
-	 * @param string|null $name
-	 * @return void
-	 */
-	public function clearSession(string $name = null) : void{
-		if(class_exists(Session::class)) {
-			if(!isset($this->session)) $this->session = new Session();
-			$this->session->clearSession($name);
-		}
-	}
-
-	/**
 	 * @param string $name
 	 * @param string $path
 	 * @return void
@@ -240,14 +195,13 @@ class Globals {
 	}
 
 
-
 	/**
 	 * @param array $var
 	 * @param string $name
 	 * @param string $type
-	 * @return array|int|string
+	 * @return mixed
 	 */
-	private function onGlobal(array $var, string $name, string $type = "") {
+	private function onGlobal(array $var, string $name, string $type = ""): mixed {
 		$name = strtolower($name);
 		if (!empty($name))
 		{
