@@ -11,5 +11,5 @@ composer require rmphp/kernel
 ```
 
 ```bash
-composer require rmphp/kernel:"^4.1"
+composer require rmphp/kernel:"^5.0"
 ```
