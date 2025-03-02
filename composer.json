@@ -12,12 +12,12 @@
 		"ext-yaml": "*",
 		"psr/log": "^3.0.0",
 		"psr/container": "^1.0",
-		"rmphp/foundation": "^2.1"
+		"rmphp/foundation": "^3.0"
 	},
 	"autoload": {
 		"psr-4": {
 			"Rmphp\\Kernel\\": "src/"
 		}
 	}
-	
+
 }
