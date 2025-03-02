@@ -12,11 +12,10 @@ use Psr\Log\LoggerInterface;
 use Rmphp\Foundation\Exceptions\AppError;
 use Rmphp\Foundation\Exceptions\AppException;
 use Rmphp\Foundation\RouterInterface;
-use Rmphp\Foundation\TemplateInterface;
 use Rmphp\Foundation\MatchObject;
 
 
-class App extends Main {
+class AppCli extends Main {
 
 	private string $baseDir;
 	private array $appRoutes = [];
@@ -47,7 +46,7 @@ class App extends Main {
 
 				if(!empty($appHandler->className)){
 					if(!class_exists($appHandler->className)) {
-						$this->syslogger()->log("handlers", "Err - Class ".$appHandler->className." is not exists");
+						$logs[] = "Err - Class ".$appHandler->className." is not exists";
 						continue;
 					}
 					$controllers[$appRouteKey] = ($this->container() instanceof ContainerInterface) ? $this->container()->get($appHandler->className) : new $appHandler->className;
@@ -55,13 +54,13 @@ class App extends Main {
 
 					if(!empty($appHandler->methodName)){
 						if(!method_exists($appHandler->className, $appHandler->methodName)) {
-							$this->syslogger()->log("handlers", "Err - Method ".$appHandler->className."/".$appHandler->methodName." is not exists");
+							$logs[] = "Err - Method ".$appHandler->className."/".$appHandler->methodName." is not exists";
 							continue;
 						}
 						$handlerResponse = (!empty($appHandler->params)) ? $controllers[$appRouteKey]->{$appHandler->methodName}(...$appHandler->params) : $controllers[$appRouteKey]->{$appHandler->methodName}();
 						$log = "Method ".$appHandler->className."/".$appHandler->methodName;
 					}
-					$this->syslogger()->log("handlers", "OK - ".$log);
+					$logs[] = "OK - ".$log;
 
 					if($handlerResponse instanceof ResponseInterface) {
 						return $handlerResponse;
@@ -69,10 +68,10 @@ class App extends Main {
 					elseif($handlerResponse === false) break;
 				}
 			}
-			/**
-			 * Отдаем пустой результат
-			 */
-			return $this->defaultPage(404);
+			if(!isset($handlerResponse)) {
+				return (isset($logs)) ? $this->defaultPage(implode(PHP_EOL, $logs)) : $this->defaultPage("Скрипт не найден");
+			}
+			return $this->globals()->response();
 		}
 		catch (AppException $appException){
 			if($this->logger()) $this->logger()->warning($appException->getMessage()." on ".$appException->getFile().":".$appException->getLine());
@@ -93,18 +92,16 @@ class App extends Main {
 		/**
 		 * Отдаем после ошибки
 		 */
-		return $this->defaultPage(501);
+		return $this->defaultPage('Ошибка при выполнении');
 	}
 
 	/**
-	 * @param int $code
+	 * @param string $error
 	 * @return ResponseInterface
 	 */
-	private function defaultPage(int $code) : ResponseInterface{
-		if(is_file($this->baseDir.'/'.getenv("PAGE".$code))){
-			$this->globals()->response()->getBody()->write(file_get_contents($this->baseDir.'/'.getenv("PAGE".$code)));
-		}
-		return $this->globals()->response()->withStatus($code);
+	private function defaultPage(string $error) : ResponseInterface{
+		$this->globals()->response()->getBody()->write($error);
+		return $this->globals()->response();
 	}
 
 	/**
@@ -128,16 +125,17 @@ class App extends Main {
 					}
 					switch (true){
 						case ($componentObject instanceof ContainerInterface): $this->setContainer($componentObject); break;
-						case ($componentObject instanceof TemplateInterface): $this->setTemplate($componentObject); break;
 						case ($componentObject instanceof LoggerInterface): $this->setLogger($componentObject); break;
 						case ($componentObject instanceof RouterInterface): $this->router = $componentObject; break;
 					}
 				}
 			}
 		}
-
 		// app nodes
-		if(is_file($this->baseDir."/".getenv("APP_NODES_FILE"))){
+		if(is_file($this->baseDir."/".getenv("APPCLI_NODES_FILE"))){
+			$nodes = include_once $this->baseDir."/".getenv("APPCLI_NODES_FILE");
+		}
+		elseif(is_file($this->baseDir."/".getenv("APP_NODES_FILE"))){
 			$nodes = include_once $this->baseDir."/".getenv("APP_NODES_FILE");
 		}
 		if(empty($nodes) || !is_array($nodes)) throw AppException::emptyAppNodes();
@@ -148,13 +146,14 @@ class App extends Main {
 	 * @param array $appNodes
 	 */
 	private function getActions(array $appNodes) : void {
+
 		foreach ($appNodes as $appNode){
 
 			// по умолчанию точка монтирования от корня
-			$mountKey = (!empty($appNode['key'])) ? $appNode['key'] : '/';
+			$mountKey = (!empty($appNode['key'])) ? $appNode['key'] : "";
 
 			// если url начинается не с точки монтирования смотрим далее
-			if (0 !== (strpos($this->globals()->request()->getUri()->getPath(), $mountKey))) continue;
+			if (0 !== (strpos($this->globals()->request()->getServerParams()['argv'][1], $mountKey))) continue;
 
 			if(!empty($appNode['action'])){
 				$className  = $appNode['action'];
@@ -164,21 +163,20 @@ class App extends Main {
 			elseif(!empty($appNode['router']) && is_array($appNode['router'])){
 				if(empty($this->router)) throw AppError::invalidRequiredObject("Application config without router");
 				$this->router->setStartPoint($mountKey);
-				$this->router->withRules($appNode['router']);
+				$this->router->withSet($appNode['router']);
 
-				$routes = $this->router->match($this->globals()->request()) ?? [];
+				$routes = $this->router->matchByArgv($this->globals()->request()) ?? [];
 				foreach ($routes as $route){
 					$this->appRoutes[] = $route;
 				}
 			}
 			elseif(!empty($appNode['router']) && file_exists($this->baseDir."/".$appNode['router'])){
-
 				if(empty($this->router)) throw AppError::invalidRequiredObject("Application config without router");
 				$this->router->setStartPoint($mountKey);
 				ob_start(); $routes = include_once $this->baseDir."/".$appNode['router']; ob_end_clean();
-				if(is_array($routes)) $this->router->withRules($routes);
+				if(is_array($routes)) $this->router->withSet($routes);
 
-				$routes = $this->router->match($this->globals()->request()) ?? [];
+				$routes = $this->router->matchByArgv($this->globals()->request()) ?? [];
 				foreach ($routes as $route){
 					$this->appRoutes[] = $route;
 				}
