@@ -132,8 +132,8 @@ class AppCli extends Main {
 			}
 		}
 		// app nodes
-		if(is_file($this->baseDir."/".getenv("APPCLI_NODES_FILE"))){
-			$nodes = include_once $this->baseDir."/".getenv("APPCLI_NODES_FILE");
+		if(is_file($this->baseDir."/".getenv("CLI_NODES_FILE"))){
+			$nodes = include_once $this->baseDir."/".getenv("CLI_NODES_FILE");
 		}
 		elseif(is_file($this->baseDir."/".getenv("APP_NODES_FILE"))){
 			$nodes = include_once $this->baseDir."/".getenv("APP_NODES_FILE");
