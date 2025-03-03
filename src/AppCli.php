@@ -75,24 +75,24 @@ class AppCli extends Main {
 		}
 		catch (AppException $appException){
 			if($this->logger()) $this->logger()->warning($appException->getMessage()." on ".$appException->getFile().":".$appException->getLine());
-			$this->syslogger()->warning("AppException: ".$appException->getMessage());
+			$error = "AppException: ".$appException->getMessage()." on ".$appException->getFile().":".$appException->getLine();
 		}
 		catch (\Exception|ContainerExceptionInterface $exception) {
 			if($this->logger()) $this->logger()->warning($exception->getMessage()." on ".$exception->getFile().":".$exception->getLine());
-			$this->syslogger()->warning("Exception: ".$exception->getMessage()." : ".$exception->getFile()." : ".$exception->getLine());
+			$error = "Exception: ".$exception->getMessage()." on ".$exception->getFile().":".$exception->getLine();
 		}
 		catch (AppError $appError){
 			if($this->logger()) $this->logger()->error($appError->getMessage()." on ".$appError->getFile().":".$appError->getLine());
-			$this->syslogger()->error("Error: ".$appError->getMessage()." : ".$appError->getFile()." : ".$appError->getLine());
+			$error = "AppError: ".$appError->getMessage()." on ".$appError->getFile().":".$appError->getLine();
 		}
 		catch (\Error $error) {
 			if($this->logger()) $this->logger()->error($error->getMessage()." on ".$error->getFile().":".$error->getLine());
-			$this->syslogger()->error("Error: ".$error->getMessage()." : ".$error->getFile()." : ".$error->getLine());
+			$error = "Error: ".$error->getMessage()." on ".$error->getFile().":".$error->getLine();
 		}
 		/**
 		 * Отдаем после ошибки
 		 */
-		return $this->defaultPage('Ошибка при выполнении');
+		return $this->defaultPage('Ошибка при выполнении. '.$error ?? "");
 	}
 
 	/**
